@@ -2,6 +2,7 @@ FROM docker.io/golang:1.22
 
 ENV PROXY_AUTH_CLIENT_ID="" \
   PROXY_AUTH_CLIENT_SECRET="" \
+  PROXY_AUTH_TENANT="moc" \
   PROXY_AUTH_REALM="NERC" \
   PROXY_AUTH_BASE_URL="https://keycloak.apps-crc.testing" \
   PROXY_AUTH_TLS_VERIFY="true" \

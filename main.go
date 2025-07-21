@@ -46,19 +46,23 @@ func run() {
 	cobrautil.RegisterHTTPServerFlags(flags, "proxy", "proxy", ":8080", true)
 	flags.StringSlice("proxy-cors-allowed-origins", []string{"*"}, "allowed origins for CORS requests")
 
-	flags.Bool("proxy-auth-client-id", true, "Keycloak auth client ID")
+	flags.String("proxy-auth-tenant", "", "Keycloak auth tenant")
+	viper.BindPFlag("proxy-auth-tenant", flags.Lookup("proxy-auth-tenant"))
+	viper.BindEnv("proxy-auth-tenant", "PROXY_AUTH_TENANT")
+
+	flags.String("proxy-auth-client-id", "", "Keycloak auth client ID")
 	viper.BindPFlag("proxy-auth-client-id", flags.Lookup("proxy-auth-client-id"))
 	viper.BindEnv("proxy-auth-client-id", "PROXY_AUTH_CLIENT_ID")
 
-	flags.Bool("proxy-auth-client-secret", true, "Keycloak auth client secret")
+	flags.String("proxy-auth-client-secret", "", "Keycloak auth client secret")
 	viper.BindPFlag("proxy-auth-client-secret", flags.Lookup("proxy-auth-client-secret"))
 	viper.BindEnv("proxy-auth-client-secret", "PROXY_AUTH_CLIENT_SECRET")
 
-	flags.Bool("proxy-auth-realm", true, "Keycloak auth realm")
+	flags.String("proxy-auth-realm", "", "Keycloak auth realm")
 	viper.BindPFlag("proxy-auth-realm", flags.Lookup("proxy-auth-realm"))
 	viper.BindEnv("proxy-auth-realm", "PROXY_AUTH_REALM")
 
-	flags.Bool("proxy-auth-base-url", true, "Keycloak base URL")
+	flags.String("proxy-auth-base-url", "", "Keycloak base URL")
 	viper.BindPFlag("proxy-auth-base-url", flags.Lookup("proxy-auth-base-url"))
 	viper.BindEnv("proxy-auth-base-url", "PROXY_AUTH_BASE_URL")
 
@@ -98,13 +102,18 @@ func run() {
 //}
 
 func rootRunE(cmd *cobra.Command, args []string) error {
+
 	proxyPrometheusBaseUrl, err := url.Parse(viper.GetString("proxy-prometheus-base-url"))
 	if err != nil {
 		return fmt.Errorf("failed to build parse upstream URL: %w", err)
 	}
-
 	if !stringz.SliceContains([]string{"http", "https"}, proxyPrometheusBaseUrl.Scheme) {
 		return errors.New("only 'http' and 'https' schemes are supported for the upstream prometheus URL")
+	}
+
+	proxyAuthTenant := viper.GetString("proxy-auth-tenant")
+	if proxyAuthTenant == "" {
+		return fmt.Errorf("the PROXY_AUTH_TENANT environment variable cannot be empty")
 	}
 
 	authBaseUrl := viper.GetString("proxy-auth-base-url")
@@ -131,6 +140,7 @@ func rootRunE(cmd *cobra.Command, args []string) error {
 			authRealm,
 			authClientId,
 			authClientSecret,
+			proxyAuthTenant,
 			services.PromQueryHandler(
 				gocloakClient,
 				authRealm,
@@ -145,16 +155,6 @@ func rootRunE(cmd *cobra.Command, args []string) error {
 		}
 	}()
 	defer proxySrv.Close()
-
-	//	const metricsPrefix = "metrics"
-	//	metricsSrv := cobrautil.HTTPServerFromFlags(cmd, metricsPrefix)
-	//	metricsSrv.Handler = metricsHandler()
-	//	go func() {
-	//		if err := cobrautil.HTTPListenFromFlags(cmd, metricsPrefix, metricsSrv, zerolog.InfoLevel); err != nil {
-	//			log.Fatal().Err(err).Msg("failed while serving metrics")
-	//		}
-	//	}()
-	//	defer metricsSrv.Close()
 
 	signalctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	<-signalctx.Done() // Block until we've received a signal.
