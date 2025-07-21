@@ -75,33 +75,62 @@ func AppendMatcher(queryValues url.Values, queryValuesForAuth url.Values, key st
 			}
 		}
 	}
-	matcher := &labels.Matcher{
-		Name:  authKey,
-		Type:  labels.MatchRegexp,
-		Value: LabelValuesToRegexpString([]string{value}),
+	if value != "" {
+		matcher := &labels.Matcher{
+			Name:  authKey,
+			Type:  labels.MatchRegexp,
+			Value: LabelValuesToRegexpString([]string{value}),
+		}
+		err := InjectMatcher(queryValuesForAuth, matcher)
+		return authKey, value, err
+	} else {
+		return authKey, value, nil
 	}
-	err := InjectMatcher(queryValuesForAuth, matcher)
-	return authKey, value, err
 }
 
-func ParseAuthorizations(queryValues url.Values) (url.Values, []string, []string) {
+func ParseAuthorizations(tenant string, queryValues url.Values) (url.Values, []string, []string) {
 	queryValuesForAuth := make(url.Values)
 
-	var keys []string
-	var values []string
-	cluster_key, cluster, _ := AppendMatcher(queryValues, queryValuesForAuth, "cluster", "cluster", "all clusters")
-	keys = append(keys, cluster_key)
-	values = append(values, cluster)
+	var authResourceNames []string
+	var authScopeNames []string
+	tenant_key := "Tenant"
+	cluster_key := "AiCluster"
+	project_key := "AiProject"
 
-	exported_namespace_key, exported_namespace, _ := AppendMatcher(queryValues, queryValuesForAuth, "exported_namespace", "namespace", "all namespaces")
-	keys = append(keys, exported_namespace_key)
-	values = append(values, exported_namespace)
+	authResourceNames = append(authResourceNames, tenant_key)
+	authScopeNames = append(authScopeNames, "GET")
 
-	namespace_key, namespace, _ := AppendMatcher(queryValues, queryValuesForAuth, "namespace", "namespace", exported_namespace)
-	keys = append(keys, namespace_key)
-	values = append(values, namespace)
+	authResourceNames = append(authResourceNames, fmt.Sprintf("%s-%s", tenant_key, tenant))
+	authScopeNames = append(authScopeNames, "GET")
 
-	return queryValuesForAuth, keys, values
+	_, cluster, _ := AppendMatcher(queryValues, queryValuesForAuth, "cluster", fmt.Sprintf("%s-%s-%s", tenant_key, tenant, "AiCluster"), "")
+
+	if cluster != "" {
+
+		authResourceNames = append(authResourceNames, fmt.Sprintf("%s-%s-%s-%s", tenant_key, tenant, cluster_key, cluster))
+		authScopeNames = append(authScopeNames, "GET")
+
+		_, exported_namespace, _ := AppendMatcher(queryValues, queryValuesForAuth, "exported_namespace", fmt.Sprintf("%s-%s-%s-%s-%s", tenant_key, tenant, "AiCluster", cluster, "AiProject"), "")
+		_, namespace, _ := AppendMatcher(queryValues, queryValuesForAuth, "namespace", fmt.Sprintf("%s-%s-%s-%s-%s", tenant_key, tenant, "AiCluster", cluster, "AiProject"), exported_namespace)
+
+		if exported_namespace != "" && cluster != "" {
+
+			if cluster != "" {
+				authResourceNames = append(authResourceNames, fmt.Sprintf("%s-%s-%s-%s-%s-%s", tenant_key, tenant, cluster_key, cluster, project_key, exported_namespace))
+				authScopeNames = append(authScopeNames, "GET")
+			}
+		}
+
+		if namespace != "" {
+
+			if cluster != "" {
+				authResourceNames = append(authResourceNames, fmt.Sprintf("%s-%s-%s-%s-%s-%s", tenant_key, tenant, cluster_key, cluster, project_key, namespace))
+				authScopeNames = append(authScopeNames, "GET")
+			}
+		}
+	}
+
+	return queryValuesForAuth, authResourceNames, authScopeNames
 }
 
 func QueryPrometheus(prometheusTlsCertPath string, prometheusTlsKeyPath string,
