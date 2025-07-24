@@ -29,9 +29,6 @@ func must(err error) {
 }
 
 func main() {
-	run()
-}
-func run() {
 	rootCmd := &cobra.Command{
 		Use:     "prom-keycloak-proxy",
 		Short:   "Proxy that protects Prometheus queries with Keycloak fine-grained resource permissions",
