@@ -106,7 +106,6 @@ func ParseAuthorizations(tenant string, queryValues url.Values) (url.Values, []s
 	_, cluster, _ := AppendMatcher(queryValues, queryValuesForAuth, "cluster", fmt.Sprintf("%s-%s-%s", tenant_key, tenant, "AiCluster"), "")
 
 	if cluster != "" {
-
 		authResourceNames = append(authResourceNames, fmt.Sprintf("%s-%s-%s-%s", tenant_key, tenant, cluster_key, cluster))
 		authScopeNames = append(authScopeNames, "GET")
 
@@ -114,7 +113,6 @@ func ParseAuthorizations(tenant string, queryValues url.Values) (url.Values, []s
 		_, namespace, _ := AppendMatcher(queryValues, queryValuesForAuth, "namespace", fmt.Sprintf("%s-%s-%s-%s-%s", tenant_key, tenant, "AiCluster", cluster, "AiProject"), exported_namespace)
 
 		if exported_namespace != "" && cluster != "" {
-
 			if cluster != "" {
 				authResourceNames = append(authResourceNames, fmt.Sprintf("%s-%s-%s-%s-%s-%s", tenant_key, tenant, cluster_key, cluster, project_key, exported_namespace))
 				authScopeNames = append(authScopeNames, "GET")
@@ -122,7 +120,6 @@ func ParseAuthorizations(tenant string, queryValues url.Values) (url.Values, []s
 		}
 
 		if namespace != "" {
-
 			if cluster != "" {
 				authResourceNames = append(authResourceNames, fmt.Sprintf("%s-%s-%s-%s-%s-%s", tenant_key, tenant, cluster_key, cluster, project_key, namespace))
 				authScopeNames = append(authScopeNames, "GET")
@@ -135,7 +132,6 @@ func ParseAuthorizations(tenant string, queryValues url.Values) (url.Values, []s
 
 func QueryPrometheus(prometheusTlsCertPath string, prometheusTlsKeyPath string,
 	prometheusCaCertPath string, prometheusUrl string) (interface{}, error) {
-
 	prometheusCaCert, err := os.ReadFile(prometheusCaCertPath)
 	if err != nil {
 		log.Panic(err)
@@ -159,9 +155,9 @@ func QueryPrometheus(prometheusTlsCertPath string, prometheusTlsKeyPath string,
 
 	response, err := client.Get(prometheusUrl)
 	if err == nil {
-		defer response.Body.Close()
+		defer response.Body.Close() //nolint:errcheck
 		var data interface{}
-		json.NewDecoder(response.Body).Decode(&data)
+		err := json.NewDecoder(response.Body).Decode(&data)
 		return data, err
 	} else {
 		return nil, err

@@ -19,6 +19,7 @@ linters:
       - path: '(.+)_test\.go'
         linters:
         - errcheck
+        - unused
   settings:
     misspell:
       locale: US
