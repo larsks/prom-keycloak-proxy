@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/OCP-on-NERC/prom-keycloak-proxy/services"
@@ -19,6 +20,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -26,6 +28,22 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func bindFlagToViper(flags *pflag.FlagSet, name string) {
+	envVar := strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
+	must(viper.BindPFlag(name, flags.Lookup(name)))
+	must(viper.BindEnv(name, envVar))
+}
+
+func registerStringFlag(flags *pflag.FlagSet, name, defaultValue, usage string) { //nolint:unparam
+	flags.String(name, defaultValue, usage)
+	bindFlagToViper(flags, name)
+}
+
+func registerBoolFlag(flags *pflag.FlagSet, name string, defaultValue bool, usage string) {
+	flags.Bool(name, defaultValue, usage)
+	bindFlagToViper(flags, name)
 }
 
 func main() {
@@ -48,45 +66,16 @@ func main() {
 	cobrautil.RegisterHTTPServerFlags(flags, "proxy", "proxy", ":8080", true)
 	flags.StringSlice("proxy-cors-allowed-origins", []string{"*"}, "allowed origins for CORS requests")
 
-	flags.String("proxy-auth-tenant", "", "Keycloak auth tenant")
-	must(viper.BindPFlag("proxy-auth-tenant", flags.Lookup("proxy-auth-tenant")))
-	must(viper.BindEnv("proxy-auth-tenant", "PROXY_AUTH_TENANT"))
-
-	flags.String("proxy-auth-client-id", "", "Keycloak auth client ID")
-	must(viper.BindPFlag("proxy-auth-client-id", flags.Lookup("proxy-auth-client-id")))
-	must(viper.BindEnv("proxy-auth-client-id", "PROXY_AUTH_CLIENT_ID"))
-
-	flags.String("proxy-auth-client-secret", "", "Keycloak auth client secret")
-	must(viper.BindPFlag("proxy-auth-client-secret", flags.Lookup("proxy-auth-client-secret")))
-	must(viper.BindEnv("proxy-auth-client-secret", "PROXY_AUTH_CLIENT_SECRET"))
-
-	flags.String("proxy-auth-realm", "", "Keycloak auth realm")
-	must(viper.BindPFlag("proxy-auth-realm", flags.Lookup("proxy-auth-realm")))
-	must(viper.BindEnv("proxy-auth-realm", "PROXY_AUTH_REALM"))
-
-	flags.String("proxy-auth-base-url", "", "Keycloak base URL")
-	must(viper.BindPFlag("proxy-auth-base-url", flags.Lookup("proxy-auth-base-url")))
-	must(viper.BindEnv("proxy-auth-base-url", "PROXY_AUTH_BASE_URL"))
-
-	flags.Bool("proxy-auth-tls-verify", true, "connect to keycloak and verify valid TLS")
-	must(viper.BindPFlag("proxy-auth-tls-verify", flags.Lookup("proxy-auth-tls-verify")))
-	must(viper.BindEnv("proxy-auth-tls-verify", "PROXY_AUTH_TLS_VERIFY"))
-
-	flags.String("proxy-prometheus-base-url", "", "address of the prometheus to use for checking")
-	must(viper.BindPFlag("proxy-prometheus-base-url", flags.Lookup("proxy-prometheus-base-url")))
-	must(viper.BindEnv("proxy-prometheus-base-url", "PROXY_PROMETHEUS_BASE_URL"))
-
-	flags.String("proxy-prometheus-tls-crt", "", "path at which to find a certificate for prometheus TLS")
-	must(viper.BindPFlag("proxy-prometheus-tls-crt", flags.Lookup("proxy-prometheus-tls-crt")))
-	must(viper.BindEnv("proxy-prometheus-tls-crt", "PROXY_PROMETHEUS_TLS_CRT"))
-
-	flags.String("proxy-prometheus-tls-key", "", "path at which to find a private key for prometheus TLS")
-	must(viper.BindPFlag("proxy-prometheus-tls-key", flags.Lookup("proxy-prometheus-tls-key")))
-	must(viper.BindEnv("proxy-prometheus-tls-key", "PROXY_PROMETHEUS_TLS_KEY"))
-
-	flags.String("proxy-prometheus-ca-crt", "", "path at which to find a ca certificate for prometheus TLS")
-	must(viper.BindPFlag("proxy-prometheus-ca-crt", flags.Lookup("proxy-prometheus-ca-crt")))
-	must(viper.BindEnv("proxy-prometheus-ca-crt", "PROXY_PROMETHEUS_CA_CRT"))
+	registerStringFlag(flags, "proxy-auth-tenant", "", "Keycloak auth tenant")
+	registerStringFlag(flags, "proxy-auth-client-id", "", "Keycloak auth client ID")
+	registerStringFlag(flags, "proxy-auth-client-secret", "", "Keycloak auth client secret")
+	registerStringFlag(flags, "proxy-auth-realm", "", "Keycloak auth realm")
+	registerStringFlag(flags, "proxy-auth-base-url", "", "Keycloak base URL")
+	registerBoolFlag(flags, "proxy-auth-tls-verify", true, "connect to keycloak and verify valid TLS")
+	registerStringFlag(flags, "proxy-prometheus-base-url", "", "address of the prometheus to use for checking")
+	registerStringFlag(flags, "proxy-prometheus-tls-crt", "", "path at which to find a certificate for prometheus TLS")
+	registerStringFlag(flags, "proxy-prometheus-tls-key", "", "path at which to find a private key for prometheus TLS")
+	registerStringFlag(flags, "proxy-prometheus-ca-crt", "", "path at which to find a ca certificate for prometheus TLS")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
