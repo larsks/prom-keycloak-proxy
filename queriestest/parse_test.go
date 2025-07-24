@@ -40,7 +40,7 @@ const (
 
 var okResponse = []byte(`ok`)
 
-func prometheusAPIError(w http.ResponseWriter, errorMessage string, code int) {
+func prometheusAPIError(w http.ResponseWriter, errorMessage string, code int) { //nolint:unparam
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
@@ -216,7 +216,7 @@ func injectMatcher(q url.Values, matcher *labels.Matcher) error {
 	return nil
 }
 
-func testClusterMatch(t *testing.T, proxyAuthTenant string, query string, expectedKeys []string, expectedValues []string) {
+func testClusterMatch(t *testing.T, proxyAuthTenant string, query string, expectedKeys []string, expectedValues []string) { //nolint:unparam
 	urlString := fmt.Sprintf("%s%s?query=%s", "http://prometheus:9090", "/api/v1/query", url.QueryEscape(query))
 
 	u, err := url.Parse(urlString)

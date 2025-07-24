@@ -22,11 +22,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	run()
 }
 func run() {
-
 	rootCmd := &cobra.Command{
 		Use:     "prom-keycloak-proxy",
 		Short:   "Proxy that protects Prometheus queries with Keycloak fine-grained resource permissions",
@@ -47,48 +52,48 @@ func run() {
 	flags.StringSlice("proxy-cors-allowed-origins", []string{"*"}, "allowed origins for CORS requests")
 
 	flags.String("proxy-auth-tenant", "", "Keycloak auth tenant")
-	viper.BindPFlag("proxy-auth-tenant", flags.Lookup("proxy-auth-tenant"))
-	viper.BindEnv("proxy-auth-tenant", "PROXY_AUTH_TENANT")
+	must(viper.BindPFlag("proxy-auth-tenant", flags.Lookup("proxy-auth-tenant")))
+	must(viper.BindEnv("proxy-auth-tenant", "PROXY_AUTH_TENANT"))
 
 	flags.String("proxy-auth-client-id", "", "Keycloak auth client ID")
-	viper.BindPFlag("proxy-auth-client-id", flags.Lookup("proxy-auth-client-id"))
-	viper.BindEnv("proxy-auth-client-id", "PROXY_AUTH_CLIENT_ID")
+	must(viper.BindPFlag("proxy-auth-client-id", flags.Lookup("proxy-auth-client-id")))
+	must(viper.BindEnv("proxy-auth-client-id", "PROXY_AUTH_CLIENT_ID"))
 
 	flags.String("proxy-auth-client-secret", "", "Keycloak auth client secret")
-	viper.BindPFlag("proxy-auth-client-secret", flags.Lookup("proxy-auth-client-secret"))
-	viper.BindEnv("proxy-auth-client-secret", "PROXY_AUTH_CLIENT_SECRET")
+	must(viper.BindPFlag("proxy-auth-client-secret", flags.Lookup("proxy-auth-client-secret")))
+	must(viper.BindEnv("proxy-auth-client-secret", "PROXY_AUTH_CLIENT_SECRET"))
 
 	flags.String("proxy-auth-realm", "", "Keycloak auth realm")
-	viper.BindPFlag("proxy-auth-realm", flags.Lookup("proxy-auth-realm"))
-	viper.BindEnv("proxy-auth-realm", "PROXY_AUTH_REALM")
+	must(viper.BindPFlag("proxy-auth-realm", flags.Lookup("proxy-auth-realm")))
+	must(viper.BindEnv("proxy-auth-realm", "PROXY_AUTH_REALM"))
 
 	flags.String("proxy-auth-base-url", "", "Keycloak base URL")
-	viper.BindPFlag("proxy-auth-base-url", flags.Lookup("proxy-auth-base-url"))
-	viper.BindEnv("proxy-auth-base-url", "PROXY_AUTH_BASE_URL")
+	must(viper.BindPFlag("proxy-auth-base-url", flags.Lookup("proxy-auth-base-url")))
+	must(viper.BindEnv("proxy-auth-base-url", "PROXY_AUTH_BASE_URL"))
 
 	flags.Bool("proxy-auth-tls-verify", true, "connect to keycloak and verify valid TLS")
-	viper.BindPFlag("proxy-auth-tls-verify", flags.Lookup("proxy-auth-tls-verify"))
-	viper.BindEnv("proxy-auth-tls-verify", "PROXY_AUTH_TLS_VERIFY")
+	must(viper.BindPFlag("proxy-auth-tls-verify", flags.Lookup("proxy-auth-tls-verify")))
+	must(viper.BindEnv("proxy-auth-tls-verify", "PROXY_AUTH_TLS_VERIFY"))
 
 	flags.Bool("proxy-prometheus-insecure", true, "connect to prometheus and verify valid TLS")
 	viper.BindPFlag("proxy-prometheus-insecure", flags.Lookup("proxy-prometheus-tls-verify"))
 	viper.BindEnv("proxy-prometheus-insecure", "PROXY_PROMETHEUS_TLS_VERIFY")
 
 	flags.String("proxy-prometheus-base-url", "", "address of the prometheus to use for checking")
-	viper.BindPFlag("proxy-prometheus-base-url", flags.Lookup("proxy-prometheus-base-url"))
-	viper.BindEnv("proxy-prometheus-base-url", "PROXY_PROMETHEUS_BASE_URL")
+	must(viper.BindPFlag("proxy-prometheus-base-url", flags.Lookup("proxy-prometheus-base-url")))
+	must(viper.BindEnv("proxy-prometheus-base-url", "PROXY_PROMETHEUS_BASE_URL"))
 
 	flags.String("proxy-prometheus-tls-crt", "", "path at which to find a certificate for prometheus TLS")
-	viper.BindPFlag("proxy-prometheus-tls-crt", flags.Lookup("proxy-prometheus-tls-crt"))
-	viper.BindEnv("proxy-prometheus-tls-crt", "PROXY_PROMETHEUS_TLS_CRT")
+	must(viper.BindPFlag("proxy-prometheus-tls-crt", flags.Lookup("proxy-prometheus-tls-crt")))
+	must(viper.BindEnv("proxy-prometheus-tls-crt", "PROXY_PROMETHEUS_TLS_CRT"))
 
 	flags.String("proxy-prometheus-tls-key", "", "path at which to find a private key for prometheus TLS")
-	viper.BindPFlag("proxy-prometheus-tls-key", flags.Lookup("proxy-prometheus-tls-key"))
-	viper.BindEnv("proxy-prometheus-tls-key", "PROXY_PROMETHEUS_TLS_KEY")
+	must(viper.BindPFlag("proxy-prometheus-tls-key", flags.Lookup("proxy-prometheus-tls-key")))
+	must(viper.BindEnv("proxy-prometheus-tls-key", "PROXY_PROMETHEUS_TLS_KEY"))
 
 	flags.String("proxy-prometheus-ca-crt", "", "path at which to find a ca certificate for prometheus TLS")
-	viper.BindPFlag("proxy-prometheus-ca-crt", flags.Lookup("proxy-prometheus-ca-crt"))
-	viper.BindEnv("proxy-prometheus-ca-crt", "PROXY_PROMETHEUS_CA_CRT")
+	must(viper.BindPFlag("proxy-prometheus-ca-crt", flags.Lookup("proxy-prometheus-ca-crt")))
+	must(viper.BindEnv("proxy-prometheus-ca-crt", "PROXY_PROMETHEUS_CA_CRT"))
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -102,7 +107,6 @@ func run() {
 //}
 
 func rootRunE(cmd *cobra.Command, args []string) error {
-
 	proxyPrometheusBaseUrl, err := url.Parse(viper.GetString("proxy-prometheus-base-url"))
 	if err != nil {
 		return fmt.Errorf("failed to build parse upstream URL: %w", err)
@@ -154,7 +158,7 @@ func rootRunE(cmd *cobra.Command, args []string) error {
 			log.Fatal().Err(err).Msg("failed while serving proxy")
 		}
 	}()
-	defer proxySrv.Close()
+	defer proxySrv.Close() //nolint:errcheck
 
 	signalctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	<-signalctx.Done() // Block until we've received a signal.
